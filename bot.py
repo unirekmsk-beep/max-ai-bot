@@ -312,7 +312,7 @@ def handle_callback(update, waiting):
     if data == "set_email":
         send_message(chat_id, "📧 Введите ваш email:")
         waiting[user_id] = True
-        return  # ← важно: не продолжать дальше
+        return  
     elif data.startswith("buy_"):
         amount = data.split("_")[1]
         send_message(chat_id, f"💰 Пополнение на {amount} руб (временно)")
@@ -381,6 +381,15 @@ def main():
                     username = msg.get('sender', {}).get('username', '')
                     text = msg.get('body', {}).get('text', '')
                     print(f"message_created: chat_id={chat_id}, text={text}")
+
+                    if waiting.get(user_id):
+                        if '@' in text and '.' in text:
+                            save_user_email(user_id, text)
+                            send_message(chat_id, f"✅ Email сохранен: {text}\nТеперь используйте /buy")
+                            waiting[user_id] = False
+                        else:
+                           send_message(chat_id, "❌ Неверный email. Попробуйте еще раз:")
+                        continue
                     
                     if text == '/start':
                         handle_start(chat_id, user_id, username, first_name)

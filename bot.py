@@ -238,6 +238,7 @@ def handle_message_text(chat_id, user_id, text, username, first_name, waiting):
             save_user_email(user_id, text)
             send_message(chat_id, f"✅ Email сохранен: {text}\nТеперь используйте /buy")
             waiting[user_id] = False
+            return 
         else:
             send_message(chat_id, "❌ Неверный email. Попробуйте еще раз:")
         return
@@ -311,6 +312,7 @@ def handle_callback(update, waiting):
     if data == "set_email":
         send_message(chat_id, "📧 Введите ваш email:")
         waiting[user_id] = True
+        return  # ← важно: не продолжать дальше
     elif data.startswith("buy_"):
         amount = data.split("_")[1]
         send_message(chat_id, f"💰 Пополнение на {amount} руб (временно)")

@@ -374,7 +374,9 @@ def main():
                     user_id = u.get('user', {}).get('user_id')
                     first_name = u.get('user', {}).get('first_name', '')
                     username = u.get('user', {}).get('username', '')
-                    print(f"bot_started: chat_id={chat_id}, user_id={user_id}")                   
+                    print(f"bot_started: chat_id={chat_id}, user_id={user_id}") 
+                    if chat_id and user_id:
+                        handle_start(chat_id, user_id, username, first_name)
                 
                 elif update_type == 'message_created':
                     msg = u.get('message', {})

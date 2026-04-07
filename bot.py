@@ -139,18 +139,14 @@ def send_message(chat_id, text, keyboard=None):
     if not chat_id:
         logger.error("No chat_id")
         return
-    
-    # Параметры в query, а не в теле
-    params = {'user_id': int(chat_id)}  # или chat_id, смотря что работает
+    params = {'chat_id': int(chat_id)}  # ← используем chat_id, а не user_id
     payload = {'text': text}
-    
     if keyboard:
         payload['attachments'] = [{'type': 'inline_keyboard', 'payload': {'buttons': keyboard}}]
-    
     try:
         r = requests.post(
             f"{MAX_API_URL}/messages",
-            headers={'Authorization': MAX_TOKEN},  # без Bearer
+            headers={'Authorization': MAX_TOKEN},
             params=params,
             json=payload,
             timeout=10

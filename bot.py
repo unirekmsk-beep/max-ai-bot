@@ -291,20 +291,25 @@ def answer_callback(callback_id, text=None):
     except Exception as e:
         logger.error(f"Callback error: {e}")        
 
-def handle_callback(callback_id, user_id, data, chat_id, waiting):
-    print(f"DEBUG handle_callback: callback_id={callback_id}, user_id={user_id}, data={data}, chat_id={chat_id}")
-    answer_callback(callback_id)
+def handle_callback(update, waiting):
+    # Извлекаем данные из update
+    callback_id = update.get('callback_query_id')
+    user_id = update.get('user', {}).get('user_id')
+    chat_id = update.get('chat_id')
+    data = update.get('payload')  # или update.get('data')
+    
+    print(f"DEBUG: callback_id={callback_id}, user_id={user_id}, data={data}, chat_id={chat_id}")
     
     if not data:
-        send_message(chat_id, "❌ Ошибка: пустые данные кнопки")
+        send_message(chat_id, "❌ Ошибка: кнопка не передала данные")
         return
     
     if data == "set_email":
         send_message(chat_id, "📧 Введите ваш email:")
         waiting[user_id] = True
     elif data.startswith("buy_"):
-        # ... код покупки
-        send_message(chat_id, f"💰 Пополнение на {data} руб")
+        amount = data.split("_")[1]
+        send_message(chat_id, f"💰 Пополнение на {amount} руб (временно)")
     elif data.startswith("model_"):
         mid = data.replace("model_", "")
         if mid == "info":
@@ -381,12 +386,7 @@ def main():
                         handle_message_text(chat_id, user_id, text, username, first_name, waiting)
                 
                 elif update_type == 'message_callback':
-                    callback_id = u.get('callback_query_id')
-                    user_id = u.get('user', {}).get('user_id')
-                    data = u.get('payload')
-                    chat_id = u.get('chat_id')
-                    print(f"callback: data={data}")
-                    handle_callback(callback_id, user_id, data, chat_id, waiting)
+                        handle_callback(u, waiting)
             
             time.sleep(0.5)
         except Exception as e:

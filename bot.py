@@ -292,16 +292,17 @@ def answer_callback(callback_id, text=None):
         logger.error(f"Callback error: {e}")        
 
 def handle_callback(update, waiting):
-    # Извлекаем данные из update
-    callback_id = update.get('callback_query_id')
-    user_id = update.get('user', {}).get('user_id')
-    chat_id = update.get('chat_id')
-    data = update.get('payload')  # или update.get('data')
+    print(f"DEBUG: full update = {update}")
     
-    print(f"DEBUG: callback_id={callback_id}, user_id={user_id}, data={data}, chat_id={chat_id}")
+    # Пробуем разные варианты
+    user_id = update.get('user_id') or update.get('user', {}).get('user_id')
+    chat_id = update.get('chat_id') or update.get('message', {}).get('chat_id')
+    data = update.get('payload') or update.get('data')
     
-    if not data:
-        send_message(chat_id, "❌ Ошибка: кнопка не передала данные")
+    print(f"DEBUG: user_id={user_id}, chat_id={chat_id}, data={data}")
+    
+    if not chat_id:
+        send_message(76702591, "❌ Ошибка: не удалось определить чат")  # временно жесткий ID
         return
     
     if data == "set_email":
@@ -386,6 +387,7 @@ def main():
                         handle_message_text(chat_id, user_id, text, username, first_name, waiting)
                 
                 elif update_type == 'message_callback':
+                        print(f"FULL CALLBACK DATA: {u}")  # ← выведет всю структуру
                         handle_callback(u, waiting)
             
             time.sleep(0.5)

@@ -292,17 +292,20 @@ def answer_callback(callback_id, text=None):
         logger.error(f"Callback error: {e}")        
 
 def handle_callback(update, waiting):
-    print(f"DEBUG: full update = {update}")
-    
-    # Пробуем разные варианты
-    user_id = update.get('user_id') or update.get('user', {}).get('user_id')
-    chat_id = update.get('chat_id') or update.get('message', {}).get('chat_id')
-    data = update.get('payload') or update.get('data')
+    # Пробуем извлечь из разных мест
+    user_id = update.get('user_id') or update.get('callback', {}).get('user_id') or update.get('user', {}).get('user_id')
+    chat_id = update.get('chat_id') or update.get('callback', {}).get('chat_id') or update.get('message', {}).get('chat_id')
+    data = update.get('payload') or update.get('callback', {}).get('payload') or update.get('data')
     
     print(f"DEBUG: user_id={user_id}, chat_id={chat_id}, data={data}")
     
     if not chat_id:
-        send_message(76702591, "❌ Ошибка: не удалось определить чат")  # временно жесткий ID
+        # Если chat_id не найден, пробуем отправить в известный чат
+        chat_id = 76702591
+        print(f"DEBUG: используем chat_id по умолчанию: {chat_id}")
+    
+    if not data:
+        send_message(chat_id, "❌ Ошибка: кнопка не передала данные")
         return
     
     if data == "set_email":
@@ -314,7 +317,11 @@ def handle_callback(update, waiting):
     elif data.startswith("model_"):
         mid = data.replace("model_", "")
         if mid == "info":
-            send_message(chat_id, "📋 Описание моделей...")
+            text = "📋 ОПИСАНИЕ МОДЕЛЕЙ:\n\n"
+            for m, info in config.MODELS.items():
+                price = "БЕСПЛАТНО" if info['price'] == 0 else f"{info['price']} руб"
+                text += f"• {info['name']} ({price}): {info['description']}\n\n"
+            send_message(chat_id, text)
         elif mid in config.MODELS:
             update_selected_model(user_id, mid)
             send_message(chat_id, f"✅ Модель изменена на: {config.MODELS[mid]['name']}")
@@ -387,7 +394,7 @@ def main():
                         handle_message_text(chat_id, user_id, text, username, first_name, waiting)
                 
                 elif update_type == 'message_callback':
-                        print(f"FULL CALLBACK DATA: {u}")  # ← выведет всю структуру
+                        print(f"FULL CALLBACK: {json.dumps(u, indent=2)}")  # ← красиво выведет всё
                         handle_callback(u, waiting)
             
             time.sleep(0.5)

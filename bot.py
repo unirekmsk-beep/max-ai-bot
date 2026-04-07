@@ -293,15 +293,14 @@ def answer_callback(callback_id, text=None):
         logger.error(f"Callback error: {e}")        
 
 def handle_callback(update, waiting):
-    # Пробуем извлечь из разных мест
-    user_id = update.get('user_id') or update.get('callback', {}).get('user_id') or update.get('user', {}).get('user_id')
-    chat_id = update.get('chat_id') or update.get('callback', {}).get('chat_id') or update.get('message', {}).get('chat_id')
-    data = update.get('payload') or update.get('callback', {}).get('payload') or update.get('data')
+    # Извлекаем user_id из callback
+    user_id = update.get('callback', {}).get('user', {}).get('user_id') or update.get('user', {}).get('user_id')
+    chat_id = update.get('message', {}).get('recipient', {}).get('chat_id') or update.get('chat_id')
+    data = update.get('callback', {}).get('payload') or update.get('payload')
     
     print(f"DEBUG: user_id={user_id}, chat_id={chat_id}, data={data}")
     
     if not chat_id:
-        # Если chat_id не найден, пробуем отправить в известный чат
         chat_id = 76702591
         print(f"DEBUG: используем chat_id по умолчанию: {chat_id}")
     
@@ -311,8 +310,13 @@ def handle_callback(update, waiting):
     
     if data == "set_email":
         send_message(chat_id, "📧 Введите ваш email:")
-        waiting[user_id] = True
-        return  
+        if user_id:
+            waiting[user_id] = True
+            print(f"DEBUG: waiting[{user_id}] = True")
+        else:
+            print("DEBUG: user_id не найден, нельзя установить waiting")
+        return
+    
     elif data.startswith("buy_"):
         amount = data.split("_")[1]
         send_message(chat_id, f"💰 Пополнение на {amount} руб (временно)")
@@ -327,7 +331,7 @@ def handle_callback(update, waiting):
         elif mid in config.MODELS:
             update_selected_model(user_id, mid)
             send_message(chat_id, f"✅ Модель изменена на: {config.MODELS[mid]['name']}")
-
+            
 # ========== GET_UPDATES ==========
 def get_updates(offset):
     try:
@@ -383,12 +387,13 @@ def main():
                     print(f"message_created: chat_id={chat_id}, text={text}")
 
                     if waiting.get(user_id):
+                        print(f"DEBUG: Ожидаем email от user_id={user_id}, сохраняем: {text}")
                         if '@' in text and '.' in text:
                             save_user_email(user_id, text)
                             send_message(chat_id, f"✅ Email сохранен: {text}\nТеперь используйте /buy")
                             waiting[user_id] = False
                         else:
-                           send_message(chat_id, "❌ Неверный email. Попробуйте еще раз:")
+                            send_message(chat_id, "❌ Неверный email. Попробуйте еще раз:")
                         continue
                     
                     if text == '/start':
